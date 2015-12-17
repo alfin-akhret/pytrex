@@ -24,6 +24,7 @@ class HTTPServer(TCPConnectedSocketHandler):
             self.do_write(data)
     
     def do_write(self, buf):
+        # implemented simple server operation
         self.connected_socket.send(buf)
         self.outgoing = False
 
