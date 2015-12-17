@@ -20,7 +20,12 @@ class HTTPServer(TCPConnectedSocketHandler):
         if not data:
             self.close()
         else:
-            self.outgoing.extend(data)
+            self.outgoing = True
+            self.do_write(data)
+    
+    def do_write(self, buf):
+        self.connected_socket.send(buf)
+        self.outgoing = False
 
     
 def serve_forever():

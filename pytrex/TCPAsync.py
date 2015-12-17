@@ -12,6 +12,10 @@ class EventHandler:
     """ This is the Abstract class for creating
         TCP EventHandler class """
 
+    # outgoing flag determined if the socket
+    # can send packet or not
+    # default is false
+
     def fileno(self):
         # return the file descriptor
         raise NotImplemented('Must implement')
@@ -91,14 +95,14 @@ class TCPConnectedSocketHandler(EventHandler):
     def __init__(self, connected_socket, handler_list):
         self.connected_socket = connected_socket
         self.handler_list = handler_list
-        self.outgoing = bytearray()
+        self.outgoing = False
 
     def fileno(self):
         return self.connected_socket.fileno()
 
     def is_writeable(self):
         return True if self.outgoing else False
-
+    
     def do_write(self):
-        buf = self.connected_socket.send(self.outgoing)
-        self.outgoing = self.outgoing[buf:]
+        # the subclass should do their own operation
+        pass
