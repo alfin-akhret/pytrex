@@ -45,14 +45,14 @@ def event_loop(handlers):
             h.do_write()
 
 
-class TCPServerHandler(EventHandler):
+class TCPListeningSocketHandler(EventHandler):
     """ Base class for any TCP connection
         its primary role is related to the TCP 'listeniing socket'
         which is to create a listening socket and 
         add incoming connection (connected socket) file descriptor
         to the handler_list"""
         
-    def __init__(self, address, tcp_client_handler, handler_list):
+    def __init__(self, address, tcp_conn_socket_handler, handler_list):
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         except OSError as e:
@@ -71,7 +71,7 @@ class TCPServerHandler(EventHandler):
 
         self.s.listen(1)
 
-        self.tcp_client_handler = tcp_client_handler
+        self.tcp_conn_socket_handler = tcp_conn_socket_handler
         self.handler_list = handler_list
 
     def fileno(self):
@@ -82,43 +82,23 @@ class TCPServerHandler(EventHandler):
 
     def do_read(self):
         client_conn, client_address = self.s.accept()
-        self.handler_list.append(self.tcp_client_handler(client_conn, self.handler_list))
+        self.handler_list.append(self.tcp_conn_socket_handler(client_conn, self.handler_list))
 
-class TCPClientHandler(EventHandler):
-    """ TCP Client handler is a base class
+class TCPConnectedSocketHandler(EventHandler):
+    """ a base class
         dealing with TCP 'connected socket' """
     
-    def __init__(self, client_socket, handler_list):
-        self.client_socket = client_socket
+    def __init__(self, connected_socket, handler_list):
+        self.connected_socket = connected_socket
         self.handler_list = handler_list
         self.outgoing = bytearray()
 
     def fileno(self):
-        return self.client_socket.fileno()
+        return self.connected_socket.fileno()
 
     def is_writeable(self):
         return True if self.outgoing else False
 
     def do_write(self):
-        buf = self.client_socket.send(self.outgoing)
+        buf = self.connected_socket.send(self.outgoing)
         self.outgoing = self.outgoing[buf:]
-
-
-# TESTING CODE:
-# sample implementation of TCPClientHandler
-# TODO: to the future, this can be HTTP handler, SSH Handler, etc
-class ExampleHTTPHandler(TCPClientHandler):
-    def is_readable(self):
-        return True
-
-    def do_read(self):
-        data = self.client_socket.recv(1024)
-        if not data:
-            self.close()
-        else:
-            self.outgoing.extend(data)
-
-if  __name__ == '__main__':
-    handlers = []
-    handlers.append(TCPServerHandler(('',8888), ExampleHTTPHandler, handlers))
-    event_loop(handlers)
