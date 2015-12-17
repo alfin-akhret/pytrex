@@ -34,13 +34,3 @@ class server(object):
             resp = b'Ok...' + data
             client_conn.sendall(resp)
         client_conn.close()
-
-
-if __name__ == '__main__':
-    s = server()
-    s.serv_forever()
-
-
-
-  
-
