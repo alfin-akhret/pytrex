@@ -18,5 +18,15 @@ print('server is listening on {host}:{port}...'.format(host=s.getsockname()[0], 
 while True:
     client_conn, client_addr = s.accept()
     print('A client connected from {}'.format(client_addr))
+    # receive incoming message from client
+    message = client_conn.recv(RECV_BUFFER)
+    # send response
+    resp = b'OK...' + message
+    client_conn.sendall(resp)
+    # close connected socket
+    client_conn.close()
 
+# close listening socket
+s.close()
+   
 
