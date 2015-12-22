@@ -1,3 +1,7 @@
 pytrex/__pycache__
 pytrex/__pycache__/*
+pytrex/*.pyc
+pytrex/*/__pycache__/*
+pytrex/*/__pycache__
+pytrex/*/*.pyc
 task.txt
