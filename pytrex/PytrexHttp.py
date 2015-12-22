@@ -6,22 +6,14 @@ from __future__ import absolute_import
 
 import select
 from pytrex.low_level import TCPUtils
+from pytrex.low_level import asynchronous
 
 class PytrexHttp(TCPUtils.TCPConnection):
     
     def __init__(self):
         TCPUtils.TCPConnection.__init__(self, host='127.0.0.1', port=8888)
-        self.sockets = {}
-        self.address = {}
-        self.bytes_received = {}
-        self.bytes_to_send = {}
-
+        self.async = asynchronous.Async()
         print('server is listening on locahost port 8888')
-
-    def all_events(self, poll_object):
-        while True:
-            for fd, event in poll_object.poll():
-                yield fd, event
 
     def serve(self):
         # put listening socket into the 'sockets' list
@@ -34,7 +26,7 @@ class PytrexHttp(TCPUtils.TCPConnection):
         poll_object.register(self.s, select.POLLIN)
 
         # the main_loop
-        for fd, event in self.all_events(poll_object):
+        for fd, event in self.async.all_events(poll_object):
             # check the socket list, search socket with this fd number
             # and put it into sock variable to be processed later
             sock = self.sockets[fd]
@@ -47,7 +39,7 @@ class PytrexHttp(TCPUtils.TCPConnection):
             if sock is self.s:
                 conn, address = sock.accept()
                 self.sockets[conn.fileno()] = conn
-                self.address[conn] = address
+                self.addresses[conn] = address
                 poll_object.register(conn, select.POLLIN)
 
             # if it's an event from already connected socket

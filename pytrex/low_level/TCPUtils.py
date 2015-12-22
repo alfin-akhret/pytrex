@@ -3,7 +3,7 @@
 # Author: Alfin Akhret <alfin.akhret@gmail.com>
 #
 # TCPUtils.py
-# Module ini berisi class yang berhubungan langsung dengan low-level networking interface pada kernel OS
+# Module ini terdiri dari class yang berhubungan langsung dengan low-level networking interface pada kernel OS
 # ex: socket
 
 import socket
@@ -43,6 +43,15 @@ class TCPConnection():
         self.backlog = backlog
         self.address_family = address_family
         self.socket_type = socket_type
+
+        # properti berikut berguna jika ingin mengimplementasikan Event-Driven I/O atau Asynchronous server
+        # socket list
+        self.sockets = {}
+        # bytes receive
+        self.bytes_received = {}
+        self.bytes_to_send = {}
+        # connected addresses list
+        self.addresses = {} 
 
         # create socket
         try:
