@@ -2,24 +2,19 @@
 #
 # Author: alfin.akhret@gmail.com
 
-import socket
-import select
+from __future__ import absolute_import
 
-class PytrexHttp():
+import select
+from pytrex.low_level import TCPUtils
+
+class PytrexHttp(TCPUtils.TCPConnection):
     
     def __init__(self):
-        # a boring constructor
-        # I don't know what to put here yet
-        # just pass it for the moment
+        TCPUtils.TCPConnection.__init__(self, host='127.0.0.1', port=8888)
         self.sockets = {}
         self.address = {}
         self.bytes_received = {}
         self.bytes_to_send = {}
-
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.s.bind(('127.0.0.1', 8888))
-        self.s.listen(1)
 
         print('server is listening on locahost port 8888')
 
@@ -63,7 +58,7 @@ class PytrexHttp():
                 if not more_data:
                     sock.close()
                     continue
-                print(more_data)
+                # print(more_data)
                 data = self.bytes_received.pop(sock, b'') + more_data
                 # do the protocol routine here...
                 if data.startswith(b'GET'):
