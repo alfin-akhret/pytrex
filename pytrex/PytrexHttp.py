@@ -21,6 +21,8 @@ class PytrexHttp():
         self.s.bind(('127.0.0.1', 8888))
         self.s.listen(1)
 
+        print('server is listening on locahost port 8888')
+
     def all_events(self, poll_object):
         while True:
             for fd, event in poll_object.poll():
@@ -64,8 +66,27 @@ class PytrexHttp():
                 print(more_data)
                 data = self.bytes_received.pop(sock, b'') + more_data
                 # do the protocol routine here...
-                if data.endswith(b'.\r\n'):
-                    self.bytes_to_send[sock] = b'Ok...' + data
+                if data.startswith(b'GET'):
+                    # self.bytes_to_send[sock] = b'Ok...' + data
+                    # trying to implement HTTP/1.0 response
+                    content = b'''\
+
+<html>
+<head><title>Pytrex Home</title>
+<body>
+<p> Hi Client, I'm pytrex. Your friendly web framework</p>
+</body>
+</html>
+'''
+                    response = b'''\
+HTTP/1.0 200 OK
+Server: pytrex/0.0.1-dev
+Content-Type: text/html
+'''
+                    response += content
+
+                    self.bytes_to_send[sock] = b''+ bytearray(response)
+
                     poll_object.modify(sock, select.POLLOUT)
                 else:
                     self.bytes_received[sock] = data
@@ -80,6 +101,7 @@ class PytrexHttp():
                     self.bytes_to_send[sock] = data[n:]
                 else:
                     poll_object.modify(sock, select.POLLIN)
+                    sock.close() # close http connection
             # if client disconnected
             elif event & (select.POLLERR | select.POLLNVAL | select.POLLHUP):
                 # delete fd from poll_object
