@@ -4,7 +4,6 @@
 
 from __future__ import absolute_import
 
-import select
 from pytrex.low_level import TCPUtils
 from pytrex.low_level import asynchronous
 
@@ -22,7 +21,7 @@ class PytrexHttp(TCPUtils.TCPConnection):
         self.async.register(self.s)
 
         # the main_loop
-        for fd, event in self.async.all_events():
+        for fd, event, em in self.async.all_events():
             # check the socket list, search socket with this fd number
             # and put it into sock variable to be processed later
             sock = self.sockets[fd]
@@ -41,7 +40,7 @@ class PytrexHttp(TCPUtils.TCPConnection):
             # if it's an event from already connected socket
             # and if it's a POLLIN event
             # means there's data ready to read on that fd, receive it
-            elif event & select.POLLIN:
+            elif event & em.POLLIN:
                 more_data = sock.recv(2096) # TODO: this is the recv buffer, this should be defined in a constant or in separated conf file
                 if not more_data:
                     sock.close()
@@ -77,18 +76,19 @@ Content-Type: text/html
             # if there's event from connected sock
             # and it mask is POLLOUT
             # means there's data ready to send to client
-            elif event & select.POLLOUT:
+            elif event & em.POLLOUT:
                 data = self.bytes_to_send.pop(sock)
                 n = sock.send(data)
                 if n < len(data):
                     self.bytes_to_send[sock] = data[n:]
                 else:
-                    # self.async.modify(sock, select.POLLIN)
                     self.async.unregister(fd)
                     sock.close() # close connection
                     del self.sockets[fd]
+                    
+                    
             # if client disconnected
-            elif event & (select.POLLERR | select.POLLNVAL | select.POLLHUP):
+            elif event & (em.POLLERR | em.POLLNVAL | em.POLLHUP):
                 # delete fd from poll_object
                 # delete sock from socks
                 self.async.unregister(fd)

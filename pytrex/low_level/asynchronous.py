@@ -29,6 +29,6 @@ class Async():
         """ file descriptor and events generator """
         while True:
             for fd, event in self.poll_object.poll():
-                yield fd, event
+                yield fd, event, select
 
     
