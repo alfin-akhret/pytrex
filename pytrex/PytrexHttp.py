@@ -18,15 +18,11 @@ class PytrexHttp(TCPUtils.TCPConnection):
     def serve(self):
         # put listening socket into the 'sockets' list
         self.sockets[self.s.fileno()] = self.s
-
-        # create poll_object
-        poll_object = select.poll()
-        # register the listening socket to poll object
-        # since this is a listening socket we set it eventmask to POLLIN
-        poll_object.register(self.s, select.POLLIN)
+        # register listening socket ke poll_object
+        self.async.register(self.s)
 
         # the main_loop
-        for fd, event in self.async.all_events(poll_object):
+        for fd, event in self.async.all_events():
             # check the socket list, search socket with this fd number
             # and put it into sock variable to be processed later
             sock = self.sockets[fd]
@@ -40,7 +36,7 @@ class PytrexHttp(TCPUtils.TCPConnection):
                 conn, address = sock.accept()
                 self.sockets[conn.fileno()] = conn
                 self.addresses[conn] = address
-                poll_object.register(conn, select.POLLIN)
+                self.async.register(conn)
 
             # if it's an event from already connected socket
             # and if it's a POLLIN event
@@ -74,7 +70,7 @@ Content-Type: text/html
 
                     self.bytes_to_send[sock] = b''+ bytearray(response)
 
-                    poll_object.modify(sock, select.POLLOUT)
+                    self.async.modify(sock, "POLLOUT")
                 else:
                     self.bytes_received[sock] = data
 
@@ -87,13 +83,15 @@ Content-Type: text/html
                 if n < len(data):
                     self.bytes_to_send[sock] = data[n:]
                 else:
-                    poll_object.modify(sock, select.POLLIN)
-                    sock.close() # close http connection
+                    # self.async.modify(sock, select.POLLIN)
+                    self.async.unregister(fd)
+                    sock.close() # close connection
+                    del self.sockets[fd]
             # if client disconnected
             elif event & (select.POLLERR | select.POLLNVAL | select.POLLHUP):
                 # delete fd from poll_object
                 # delete sock from socks
-                poll_object.unregister(fd)
+                self.async.unregister(fd)
                 del self.sockets[fd]
 
 
