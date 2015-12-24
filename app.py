@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from pytrex.low_level import SocketConnection
+from pytrex import PytrexHttp
 
 if __name__ == '__main__':
     # httpserver.serve_forever()
@@ -10,8 +10,11 @@ if __name__ == '__main__':
     # test for HTTPUtils
     # url = HTTPUtils.URLUtils()
     
-    httpserver = SocketConnection.HTTPConnection(('localhost', 8888))
-    httpserver.start_async_server()
+    # httpserver = SocketConnection.HTTPConnection(('localhost', 8888))
+    # httpserver.start_async_server()
+    
+    s = PytrexHttp.PytrexHttp(('localhost', 8888), 'asynchronous')
+    s.serve_forever()
 
 
 
