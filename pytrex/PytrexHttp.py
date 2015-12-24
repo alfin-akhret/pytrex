@@ -41,7 +41,7 @@ class PytrexHttp(TCPUtils.TCPConnection):
             # and if it's a POLLIN event
             # means there's data ready to read on that fd, receive it
             elif event & em.POLLIN:
-                more_data = sock.recv(2096) # TODO: this is the recv buffer, this should be defined in a constant or in separated conf file
+                more_data = sock.recv(self.recv_buffer) 
                 if not more_data:
                     sock.close()
                     continue
@@ -49,7 +49,6 @@ class PytrexHttp(TCPUtils.TCPConnection):
                 data = self.bytes_received.pop(sock, b'') + more_data
                 # do the protocol routine here...
                 if data.startswith(b'GET'):
-                    # self.bytes_to_send[sock] = b'Ok...' + data
                     # trying to implement HTTP/1.0 response
                     content = b'''\
 
@@ -66,9 +65,7 @@ Server: pytrex/0.0.1-dev
 Content-Type: text/html
 '''
                     response += content
-
                     self.bytes_to_send[sock] = b''+ bytearray(response)
-
                     self.async.modify(sock, "POLLOUT")
                 else:
                     self.bytes_received[sock] = data
@@ -85,8 +82,7 @@ Content-Type: text/html
                     self.async.unregister(fd)
                     sock.close() # close connection
                     del self.sockets[fd]
-                    
-                    
+
             # if client disconnected
             elif event & (em.POLLERR | em.POLLNVAL | em.POLLHUP):
                 # delete fd from poll_object

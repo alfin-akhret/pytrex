@@ -72,3 +72,7 @@ class TCPConnection():
 
         # listening
         self.s.listen(self.backlog)
+
+    def serve(self):
+        # must be implemented
+        raise NotImplemented('This must be implemented')
