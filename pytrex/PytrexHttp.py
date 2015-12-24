@@ -7,13 +7,13 @@ from __future__ import absolute_import
 from pytrex.low_level import SocketConnection
 from pytrex.low_level import asynchronous
 
-class PytrexHttp(SocketConnection.TCPConnection):
+class PytrexHttp(SocketConnection.HTTPConnection):
 
     host = '127.0.0.1'
     port = 8888
 
     def __init__(self):
-        SocketConnection.TCPConnection.__init__(self,  (self.host, self.port), True)
+        SocketConnection.HTTPConnection.__init__(self,  (self.host, self.port))
         self.async = asynchronous.Async()
         print('server is listening on locahost port {0}'.format(str(self.port)))
 
