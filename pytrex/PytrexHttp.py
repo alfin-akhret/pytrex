@@ -4,19 +4,22 @@
 
 from __future__ import absolute_import
 
-from pytrex.low_level import TCPUtils
+from pytrex.low_level import SocketConnection
 from pytrex.low_level import asynchronous
 
-class PytrexHttp(TCPUtils.TCPConnection):
-    
+class PytrexHttp(SocketConnection.TCPConnection):
+
+    host = '127.0.0.1'
+    port = 8888
+
     def __init__(self):
-        TCPUtils.TCPConnection.__init__(self, host='127.0.0.1', port=8888)
+        SocketConnection.TCPConnection.__init__(self,  (self.host, self.port), True)
         self.async = asynchronous.Async()
-        print('server is listening on locahost port 8888')
+        print('server is listening on locahost port {0}'.format(str(self.port)))
 
     def serve(self):
         # put listening socket into the 'sockets' list
-        self.sockets[self.s.fileno()] = self.s
+        self.socket_list[self.s.fileno()] = self.s
         # register listening socket ke poll_object
         self.async.register(self.s)
 
@@ -24,7 +27,7 @@ class PytrexHttp(TCPUtils.TCPConnection):
         for fd, event, em in self.async.all_events():
             # check the socket list, search socket with this fd number
             # and put it into sock variable to be processed later
-            sock = self.sockets[fd]
+            sock = self.socket_list[fd]
 
             # if it's a new socket
             # it means its a connected socket from a client
@@ -33,7 +36,7 @@ class PytrexHttp(TCPUtils.TCPConnection):
             # done
             if sock is self.s:
                 conn, address = sock.accept()
-                self.sockets[conn.fileno()] = conn
+                self.socket_list[conn.fileno()] = conn
                 self.addresses[conn] = address
                 self.async.register(conn)
 
@@ -81,14 +84,14 @@ Content-Type: text/html
                 else:
                     self.async.unregister(fd)
                     sock.close() # close connection
-                    del self.sockets[fd]
+                    del self.socket_list[fd]
 
             # if client disconnected
             elif event & (em.POLLERR | em.POLLNVAL | em.POLLHUP):
                 # delete fd from poll_object
                 # delete sock from socks
                 self.async.unregister(fd)
-                del self.sockets[fd]
+                del self.socket_list[fd]
 
 
 
