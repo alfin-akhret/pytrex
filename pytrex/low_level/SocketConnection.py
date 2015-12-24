@@ -5,9 +5,12 @@
 # SocketConnection.py
 # Module ini terdiri dari class yang berhubungan langsung dengan low-level networking interface pada kernel OS
 # ex: socket
+from __future__ import absolute_import
 
 import socket
 import sys
+from functools import wraps
+from pytrex.low_level import AsynchronousUtils
 
 # default options untuk koneksi TCP
 
@@ -73,39 +76,79 @@ class HTTPConnection(TCPConnection):
     def __init__(self, host_address):
         """Constructor. Bisa di extends tapi jangan di override"""
         TCPConnection.__init__(self, host_address, True)
+        self.async = AsynchronousUtils.Async()
         self.socket_list = {}
-        # self.bytes_received = {}
-        # self.bytes_to_send = {}
-        # self.addresses = {}
+        self.addresses = {}
+        self.bytes_received = {}
+        self.bytes_to_send = {}
 
-    def serve(self, poll_loop): 
-        """ Main loop. Bisa diextends ataupun di override. Tapi harus diimplementasikan."""
-        # while True:
-        #     conn = self.accept_new_conn()
-        #     print('Accepted connection from {}'.format(conn[1]))
-        #     try:
-        #         while True:
-        #             # handle request here
-        #             br = self.receive_data(conn[0])
-        #             self.send_data(conn[0], br)
-        #             conn[0].close()
-        #             break
-        #     except:
-        #         raise
+    def start_async_server(self):
         self.socket_list[self.fileno()] = self.s
-        
-    def async(self, poll_loop):
-        for fd, event, eventmask in poll_loop():
+        self.async.register(self.s)
+
+        for fd, event, eventmask in self.async.all_events():
             sock = self.socket_list[fd]
+
             if sock == self.s:
-                # handle new connection here
+                # handle incoming new connection here
+                self.accept_new_conn()
+
             elif event & eventmask.POLLIN:
-                # a connected socket is readable
+                # handle readble socket here
+                more_data = self.receive_data(sock)
+                if not more_data:
+                    sock.close()
+                    continue
+                data = self.bytes_received.pop(sock, b'') + more_data
+                if self.is_http_request(data):
+                    # compose response
+                    response = b'[Server] OK...\n' # TODO: craft response using HTTP implementation module
+                    self.bytes_to_send[sock] = response
+                    self.async.modify(sock, "POLLOUT")
+                else:
+                    self.bytes_received[sock] = data
+
             elif event & eventmask.POLLOUT:
-                # a connected socket is writeable
-            else:
-                # handle socket connection error here
+                # handle writeable socket here
+                data = self.bytes_to_send.pop(sock)
+                n = sock.send(data)
+                if n < len(data):
+                    self.bytes_to_send[sock] = data[n:]
+                else:
+                    self.async.unregister(fd)
+                    sock.close() # close connection
+                    del self.socket_list[fd]
+        
+            elif event & (eventmask.POLLERR | eventmask.POLLNVAL | eventmask.POLLHUP):
+                # handle socket error here
+                self.async.unregister(fd)
+                del self.socket_list[fd]
     
-    def send_data(self, data_buffer):
-        """ override TCPConnection send_data methods """
-        pass
+    # override TCPConnection.accept_new_conn() method
+    def accept_new_conn(self):
+        conn = super(HTTPConnection, self).accept_new_conn()
+        self.socket_list[conn[0].fileno()] = conn[0]
+        self.addresses[conn[0]] = conn[1]
+        self.async.register(conn[0])
+
+    # simple HTTP wrapper
+    # TODO: this sould be written in seperate modules exclusively to implements HTTP protocol
+    def check_request(func):
+        @wraps(func)
+        def func_wrapper(*args, **kwargs):
+            retval = func(*args, **kwargs)
+            if retval.startswith('GET'):
+                return True
+            else:
+                return False
+        return func_wrapper
+
+    @check_request
+    def is_http_request(self, data_buffer):
+        return data_buffer
+
+   
+        
+
+    
+

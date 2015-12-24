@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from pytrex import PytrexHttp
-from pytrex.low_level import HTTPUtils
 from pytrex.low_level import SocketConnection
 
 if __name__ == '__main__':
@@ -13,7 +11,7 @@ if __name__ == '__main__':
     # url = HTTPUtils.URLUtils()
     
     httpserver = SocketConnection.HTTPConnection(('localhost', 8888))
-    httpserver.serve()
+    httpserver.start_async_server()
 
 
 
