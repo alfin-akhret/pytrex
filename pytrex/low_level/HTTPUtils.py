@@ -2,7 +2,6 @@
 #
 # Author: Alfin Akhret <alfin.akhret@gmail.com>
 # Implementation of HTTP/1.0 and HTTP/1.1
-import urllib
 
 class HTTPUtils():
     def __init__(self):
@@ -23,9 +22,6 @@ class HTTPUtils():
         instead of a pathname. We must support this transition"""
         pass
 
-class URLUtils():
-    def __init__(self):
-        print("testing urllib")
 
 
 
